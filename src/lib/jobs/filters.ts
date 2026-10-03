@@ -40,6 +40,16 @@ const SENIOR_LEVEL =
 const SOFTWARE_TITLE =
   /\b(software|engineer|engineering|developer|development|sde|sdet|swe|programmer|full.?stack|back.?end|front.?end|web dev|webdev|platform|infrastructure|devops|site reliability|sre)\b/i;
 
+/**
+ * Listings that are not a specific opening you can apply to. Talent pools and
+ * evergreen requisitions collect CVs without a vacancy behind them, and paid
+ * research studies are gig work, not engineering roles. Both slip past the
+ * software-title check on words like "Engineering" or "Development", and past
+ * the early-career check because aggregators tag whole queries "Entry-level".
+ */
+const NOT_AN_OPENING =
+  /\b(future opportunit(?:y|ies)|talent (?:pool|community|network|pipeline)|general application|speculative|expression of interest|candidate pool|evergreen|join our talent|study|survey|participants?)\b|\$\s?\d/i;
+
 /** Roles that match SOFTWARE_TITLE by accident or are a different discipline. */
 const OFF_TARGET_TITLE =
   /\b(sales|account|pre.?sales|solutions?|field|customer|client|success|support|recruit|recruiting|recruiter|talent|sourcer|marketing|growth marketing|content|copywriter|writer|editor|designer|design|ux|ui designer|hr\b|people ops|finance|accounting|audit|legal|counsel|compliance|operations|mechanical|electrical|electronics hardware|civil|chemical|industrial|biomedical|aerospace|automotive|manufacturing|process|hardware|firmware|embedded|asic|vlsi|rf\b|network engineer|security engineer|soc analyst|qa contributor|annotat|labeler|labelling|tutor|teacher|trainer|nurse|driver|warehouse|picker|technician|teleca|chat specialist|virtual assistant|bookkeep|business development|representative|\bbdr\b|\bsdr\b|analyst|consultant|advocate|evangelist|partnerships?|procurement|payroll|administrative|executive)\b/i;
@@ -198,6 +208,10 @@ export function classifySeniority(input: SeniorityInput): SeniorityVerdict {
   const title = (input.title ?? "").trim();
   if (!title) return { ok: false, reason: "no title" };
 
+  const notOpening = NOT_AN_OPENING.exec(title);
+  if (notOpening) {
+    return { ok: false, reason: `title is not a specific opening ("${notOpening[0].trim()}")` };
+  }
   if (OFF_TARGET_TITLE.test(title)) {
     return { ok: false, reason: "title is not a software engineering role" };
   }

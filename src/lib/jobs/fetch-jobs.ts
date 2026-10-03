@@ -101,6 +101,17 @@ function reusable(previous: JobsSnapshot | null, spec: SourceSpec, now: number) 
   };
 }
 
+/**
+ * Postings this source contributed to the last good snapshot. A failed fetch
+ * carries these forward rather than contributing nothing, because a timeout
+ * means "we could not ask", not "those jobs were withdrawn". Without this, one
+ * slow board silently deletes rows the user was already looking at.
+ */
+function priorJobs(previous: JobsSnapshot | null, source: SourceName): NormalizedJob[] {
+  if (!previous) return [];
+  return previous.jobs.filter((job) => job.source === source);
+}
+
 export async function fetchAllJobs(previous: JobsSnapshot | null): Promise<JobsSnapshot> {
   const now = Date.now();
 
@@ -109,7 +120,7 @@ export async function fetchAllJobs(previous: JobsSnapshot | null): Promise<JobsS
       const cached = reusable(previous, spec, now);
       if (cached) {
         return {
-          result: { ...cached.result, fromCache: true, kept: cached.jobs.length },
+          result: { ...cached.result, fromCache: true, keptStale: false, kept: cached.jobs.length },
           jobs: cached.jobs,
         };
       }
@@ -118,12 +129,14 @@ export async function fetchAllJobs(previous: JobsSnapshot | null): Promise<JobsS
       try {
         const harvest = await spec.run();
         const ok = !harvest.fatal;
+        const carried = ok ? [] : priorJobs(previous, spec.name);
         return {
           result: {
             source: spec.name,
             label: SOURCE_LABELS[spec.name],
             ok,
             fromCache: false,
+            keptStale: !ok && carried.length > 0,
             error: harvest.fatal ?? null,
             fetched: harvest.fetched,
             kept: harvest.jobs.length,
@@ -131,15 +144,17 @@ export async function fetchAllJobs(previous: JobsSnapshot | null): Promise<JobsS
             failedEndpoints: harvest.failures,
             durationMs: Date.now() - started,
           },
-          jobs: ok ? harvest.jobs : [],
+          jobs: ok ? harvest.jobs : carried,
         };
       } catch (error) {
+        const carried = priorJobs(previous, spec.name);
         return {
           result: {
             source: spec.name,
             label: SOURCE_LABELS[spec.name],
             ok: false,
             fromCache: false,
+            keptStale: carried.length > 0,
             error: error instanceof Error ? error.message : "unexpected failure",
             fetched: 0,
             kept: 0,
@@ -147,7 +162,7 @@ export async function fetchAllJobs(previous: JobsSnapshot | null): Promise<JobsS
             failedEndpoints: [],
             durationMs: Date.now() - started,
           },
-          jobs: [],
+          jobs: carried,
         };
       }
     }),

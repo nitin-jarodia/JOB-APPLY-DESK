@@ -33,6 +33,12 @@ export const sourceResultSchema = z.object({
   ok: z.boolean(),
   /** Set when this source's result was reused from cache instead of refetched. */
   fromCache: z.boolean(),
+  /**
+   * Set when this source failed and its postings were carried over from the
+   * last good fetch, so a timeout does not delete jobs that already loaded.
+   * Defaults so snapshots written before this field stay readable.
+   */
+  keptStale: z.boolean().default(false),
   error: z.string().nullable(),
   fetched: z.number(),
   kept: z.number(),
