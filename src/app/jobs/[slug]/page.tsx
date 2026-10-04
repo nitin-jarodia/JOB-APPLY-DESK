@@ -12,6 +12,10 @@ import {
 import { BoundariesNote } from "@/components/boundaries-note";
 import { formatJobDate } from "@/components/jobs/job-card";
 import { JobStatusControls } from "@/components/jobs/job-status-controls";
+import {
+  EligibilityBadge,
+  EligibilityNotice,
+} from "@/components/jobs/eligibility-notice";
 import { ScoreBreakdown } from "@/components/jobs/score-breakdown";
 import { StatusBadge } from "@/components/jobs/status-badge";
 import { TailoredResumePanel } from "@/components/jobs/tailored-resume-panel";
@@ -99,6 +103,7 @@ export default async function JobDetailPage({
             </div>
           </dl>
           <div className="flex flex-wrap items-center gap-1.5">
+            <EligibilityBadge eligibility={job.scoring.eligibility} />
             <StatusBadge status={status} />
             <Badge variant="secondary">{job.sourceLabel}</Badge>
             <Badge variant="outline">{FIT_LABEL[job.locationFit]}</Badge>
@@ -110,6 +115,11 @@ export default async function JobDetailPage({
             <Badge variant="outline">{job.scoring.seniorityLabel}</Badge>
           </div>
         </header>
+
+        {/* Above the score on purpose. The bug this fixes was a role he could
+            not apply for reading as a strong match, so the requirement has to
+            be visible before the number is. */}
+        <EligibilityNotice eligibility={job.scoring.eligibility} />
 
         <ScoreBreakdown scoring={job.scoring} />
 

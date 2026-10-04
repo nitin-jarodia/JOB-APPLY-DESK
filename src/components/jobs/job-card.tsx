@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRightIcon, BuildingIcon, CalendarIcon, MapPinIcon } from "lucide-react";
 
+import { EligibilityBadge } from "@/components/jobs/eligibility-notice";
 import { ScoreBadge } from "@/components/jobs/score-badge";
 import { SkillLines } from "@/components/jobs/skill-lines";
 import { StatusBadge } from "@/components/jobs/status-badge";
@@ -65,11 +66,20 @@ export function JobCard({
           <ScoreBadge
             score={job.scoring.score}
             verdict={job.scoring.verdict}
+            ineligible={job.scoring.eligibility.blocked}
             className="self-start"
           />
         </div>
 
+        {job.scoring.eligibility.blocked ? (
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive dark:text-red-300">
+            {job.scoring.eligibility.findings.find((finding) => finding.outcome === "blocked")
+              ?.note}
+          </p>
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-1.5">
+          <EligibilityBadge eligibility={job.scoring.eligibility} />
           <StatusBadge status={status} />
           <Badge variant="secondary">{job.sourceLabel}</Badge>
           <Badge variant="outline">{FIT_LABEL[job.locationFit]}</Badge>

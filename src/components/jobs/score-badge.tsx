@@ -13,14 +13,24 @@ function bandFor(score: number): string {
   return (BANDS.find((band) => score >= band.min) ?? BANDS[BANDS.length - 1]).className;
 }
 
+/**
+ * A blocked posting scores low enough to land in the neutral band, which reads
+ * as "weak" rather than "ruled out". The destructive colour is forced so the
+ * reason is not mistaken for a merely poor match.
+ */
+const INELIGIBLE_CLASS =
+  "border-destructive/40 bg-destructive/10 text-destructive dark:text-red-300";
+
 export function ScoreBadge({
   score,
   verdict,
+  ineligible = false,
   size = "sm",
   className,
 }: {
   score: number;
   verdict?: string;
+  ineligible?: boolean;
   size?: "sm" | "lg";
   className?: string;
 }) {
@@ -29,7 +39,7 @@ export function ScoreBadge({
       className={cn(
         "inline-flex items-center gap-2 rounded-md border font-medium tabular-nums",
         size === "lg" ? "px-3 py-1.5 text-base" : "px-2 py-0.5 text-xs",
-        bandFor(score),
+        ineligible ? INELIGIBLE_CLASS : bandFor(score),
         className,
       )}
     >

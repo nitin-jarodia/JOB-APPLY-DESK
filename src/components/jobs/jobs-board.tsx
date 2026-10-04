@@ -154,6 +154,7 @@ export function JobsBoard() {
       if (needle && !job.location.toLowerCase().includes(needle)) return false;
       if (filters.source !== "all" && job.source !== filters.source) return false;
       if (job.scoring.score < filters.minScore) return false;
+      if (filters.hideIneligible && job.scoring.eligibility.blocked) return false;
       return true;
     });
 

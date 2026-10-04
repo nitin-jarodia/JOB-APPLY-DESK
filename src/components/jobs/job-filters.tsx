@@ -24,6 +24,7 @@ export type JobFilterState = {
   location: string;
   source: string;
   minScore: number;
+  hideIneligible: boolean;
   sort: SortKey;
 };
 
@@ -33,6 +34,9 @@ export const EMPTY_FILTERS: JobFilterState = {
   location: "",
   source: "all",
   minScore: 0,
+  // Off by default. Parsing an employer's wording is fallible, so the postings
+  // stay visible until he decides to hide them.
+  hideIneligible: false,
   sort: "score",
 };
 
@@ -42,7 +46,8 @@ export function isFiltered(filters: JobFilterState): boolean {
     filters.family !== EMPTY_FILTERS.family ||
     filters.location.trim() !== "" ||
     filters.source !== EMPTY_FILTERS.source ||
-    filters.minScore !== EMPTY_FILTERS.minScore
+    filters.minScore !== EMPTY_FILTERS.minScore ||
+    filters.hideIneligible !== EMPTY_FILTERS.hideIneligible
   );
 }
 
@@ -138,6 +143,26 @@ export function JobFilters({
             onValueChange={([value]) => set("minScore", value ?? 0)}
             className="py-2"
           />
+        </div>
+      </div>
+
+      <div className="flex items-start gap-2.5">
+        <input
+          id="filter-hide-ineligible"
+          type="checkbox"
+          checked={filters.hideIneligible}
+          onChange={(event) => set("hideIneligible", event.target.checked)}
+          className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary"
+        />
+        <div className="flex flex-col gap-0.5">
+          <Label htmlFor="filter-hide-ineligible" className="cursor-pointer">
+            Hide roles you are not eligible for
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Only hides postings that state a requirement your profile does not
+            meet, such as a minimum CGPA. The reason is always quoted on the
+            posting.
+          </p>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { eligibilitySchema } from "@/lib/eligibility/types";
 import { jobsSnapshotSchema, normalizedJobSchema } from "@/lib/jobs/types";
 
 export const ROLE_FAMILIES = [
@@ -64,6 +65,8 @@ export const jobScoreSchema = z.object({
   gaps: z.array(gapSkillSchema),
   families: z.array(z.enum(ROLE_FAMILIES)),
   seniorityLabel: z.string(),
+  /** Stated requirements checked against the profile, with the posting's wording. */
+  eligibility: eligibilitySchema,
 });
 
 export const scoredJobSchema = normalizedJobSchema.extend({

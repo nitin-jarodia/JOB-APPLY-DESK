@@ -204,6 +204,7 @@ The score is three positives and two penalties:
 | Role family | 0 to 23 | Full-stack scores highest because both projects are full-stack, then backend, frontend, and AI-application work. The preferred families come from the profile's saved preferences. |
 | Missing requirements | 0 to −25 | Requirements not on the resume. A technology the posting is *named after* costs more than one buried in the description. |
 | Off-target role | 0 to −30 | Mobile-only, infrastructure-only, QA-only, data-engineering-only, embedded, or non-engineering titles. |
+| Not eligible | caps the total at 12 | A requirement the posting states that your profile does not meet. See below. |
 
 A poorly fitting posting is never deleted, only scored low, so you can still see what the
 filters let through. The jobs page sorts by score by default and can be re-sorted by date.
@@ -214,6 +215,46 @@ resume, and the gaps in plain language.
 The jobs page has a search box for title and company, plus filters for role family,
 location text, source, and minimum score. They all narrow the same list, so they stack
 rather than replace each other.
+
+### Eligibility
+
+Stack overlap is not the only thing that decides whether a job is worth your time. A
+posting can match your skills well and still rule you out in one line, and a score that
+only measures skills will happily put it at the top of your list.
+
+So before scoring, each posting is read for the numeric bars it states about the
+candidate rather than about the work:
+
+- **CGPA and percentage minimums**, like "CGPA 8 and above" or "60% aggregate
+  throughout", compared against the score on your profile's education entry.
+- **Graduating batch**, like "2027 graduates only", compared against the graduation year
+  in your saved preferences.
+
+A posting that fails a bar is labelled **Not eligible**, capped at a score of 12 so it
+sorts below everything you qualify for, and left off the shortlist's recommendation
+group. It is still listed on the jobs page, and the checkbox there hides these entirely
+if you want. Every flag quotes the posting's own line, and the heading it sat under, so
+you can judge the call yourself.
+
+Four rules keep this from doing more harm than good:
+
+- **A missed bar is cheaper than a wrong one.** Being wrongly told you are ineligible
+  costs you a job you could have got, so anything unclear is dropped rather than guessed.
+  Phrasing that is not explicitly mandatory is treated as a preference and only warns.
+- **Nothing is inferred about you.** Comparisons run against values you actually typed.
+  If your profile has no CGPA, the requirement is reported as unchecked rather than
+  failed.
+- **Ambiguous scales are skipped.** "CGPA 8" must be out of 10, since a 4-point scale
+  cannot reach it. "GPA 3.5" could be either, so no comparison is made. Converting a CGPA
+  to a percentage is not standard across universities, so that pairing is reported rather
+  than decided.
+- **No flag without a quote.** `npm run check:eligibility` asserts that every finding
+  carries a verbatim line from the posting, and that a list of near-miss phrasings —
+  "100% remote", "minimum 2 years of experience", "founded in 2021", "CGPA 8 preferred" —
+  produces no block.
+
+These bars are read from the full description before the 4,000-character cap below, so
+an eligibility section near the end of a long posting is still seen.
 
 Two honest limits. Scoring only sees the description the source returned, capped at 4,000
 characters, so a posting that spends its first 4,000 characters on company blurb scores
@@ -228,8 +269,8 @@ Each posting's detail page builds a resume aimed at that job and shows it beside
 master so you can see exactly what moved. You copy, download, or print it and apply
 yourself. Nothing is ever submitted.
 
-The detail page reads top to bottom as title and company, score, Apply, gaps, tailored
-resume, original description. Building the resume is what flips that posting to **Resume
+The detail page reads top to bottom as title and company, any eligibility warning, score,
+Apply, gaps, tailored resume, original description. Building the resume is what flips that posting to **Resume
 ready**, so it appears in the middle group on the shortlist.
 
 ### What tailoring is allowed to do
@@ -331,6 +372,10 @@ src/
     seed-profile.ts               The seeded master resume
     activity/
       store.ts, types.ts          Per-job status and applied timestamp
+    eligibility/
+      bars.ts                     Reads CGPA, percentage, batch bars from a posting
+      check.ts                    Compares those bars against the profile
+      types.ts                    Bar, finding, and verdict schemas
     jobs/
       boards.ts                   Verified board tokens and queries
       filters.ts                  Location and seniority rules
@@ -352,6 +397,7 @@ src/
 scripts/verify-boards.mjs         Re-checks every board token
 scripts/check-scoring.ts          Ranking and gap-honesty assertions
 scripts/check-tailoring.ts        Every tailored claim traced to the master
+scripts/check-eligibility.ts      Stated bars caught, near-miss phrasings are not
 data/profile.json                 Your live resume (git-ignored)
 data/jobs.json                    Last successful fetch (git-ignored)
 data/tailored.json                Tailored resumes by job id (git-ignored)
@@ -367,12 +413,15 @@ Next.js (App Router) · TypeScript · Tailwind CSS v4 · shadcn/ui · Zod · JSO
 ```bash
 npm run lint
 npx tsc --noEmit
-npm run check:scoring    # ranking and gap-honesty assertions, offline
-npm run check:tailoring  # every tailored claim traced back to the master resume
-npm run verify:boards    # re-checks every job board token against its live API
+npm run check:scoring      # ranking and gap-honesty assertions, offline
+npm run check:tailoring    # every tailored claim traced back to the master resume
+npm run check:eligibility  # stated bars are caught, near-miss phrasings are not
+npm run verify:boards      # re-checks every job board token against its live API
 ```
 
 `check:scoring` prints the score every fixture and every cached posting receives, so a
 change to the engine shows up as a diff in the table rather than as a silent re-ranking.
 `check:tailoring` prints each generated summary and what it promoted or dropped, and
 fails if anything in a tailored resume cannot be traced back to the master.
+`check:eligibility` prints which cached postings are blocked and the line each block
+rests on, and fails if a posting is ever flagged without a quote.

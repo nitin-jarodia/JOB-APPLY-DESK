@@ -1,3 +1,5 @@
+import { checkEligibility } from "@/lib/eligibility/check";
+import type { EligibilityBar } from "@/lib/eligibility/types";
 import type { Profile } from "@/lib/profile-schema";
 
 import type { ResumeSkillIndex } from "./resume-skills";
@@ -196,8 +198,14 @@ const DEPTH_TARGET = 6;
 /** Technologies a posting must name before its match ratio is trusted fully. */
 const CONFIDENT_AT = 4;
 
+/**
+ * Highest score a posting can hold once it fails a stated requirement. Set
+ * below the weakest realistic match so an ineligible role always sorts last.
+ */
+const INELIGIBLE_CEILING = 12;
+
 export function scoreJob(
-  job: { title: string; description: string },
+  job: { title: string; description: string; eligibilityBars?: EligibilityBar[] },
   resume: ResumeSkillIndex,
   profile: Profile,
 ): JobScore {
@@ -304,11 +312,22 @@ export function scoreJob(
   }
   offTargetPenalty = Math.min(offTargetPenalty, 30);
 
-  const score = clamp(
+  const rawScore = clamp(
     Math.round(stackPoints + seniority.points + familyPoints - gapPenalty - offTargetPenalty),
     0,
     100,
   );
+
+  // A requirement he does not meet is not one signal among several. The score
+  // is pulled below every eligible posting rather than nudged, because the
+  // failure this fixes was a role he cannot apply for sitting at the top of the
+  // list. The deduction is shown as its own component so the arithmetic on
+  // screen still adds up.
+  const eligibility = checkEligibility(job.eligibilityBars ?? [], profile);
+  const eligibilityPenalty = eligibility.blocked
+    ? Math.max(0, rawScore - INELIGIBLE_CEILING)
+    : 0;
+  const score = rawScore - eligibilityPenalty;
 
   const components: ScoreComponent[] = [
     {
@@ -352,6 +371,17 @@ export function scoreJob(
     });
   }
 
+  if (eligibilityPenalty > 0) {
+    const blocked = eligibility.findings.filter((finding) => finding.outcome === "blocked");
+    components.push({
+      id: "eligibility",
+      label: "Not eligible",
+      points: -eligibilityPenalty,
+      max: null,
+      detail: `${blocked.map((finding) => finding.note).join(" ")} The posting is kept here so you can read it, but it cannot rank above roles you qualify for.`,
+    });
+  }
+
   if (offTargetPenalty > 0) {
     components.push({
       id: "off-target",
@@ -364,8 +394,9 @@ export function scoreJob(
     });
   }
 
-  const verdict =
-    score >= 75
+  const verdict = eligibility.blocked
+    ? "Not eligible"
+    : score >= 75
       ? "Strong match"
       : score >= 55
         ? "Worth a look"
@@ -373,8 +404,10 @@ export function scoreJob(
           ? "Weak match"
           : "Poor match";
 
-  const headline =
-    matched.length > 0
+  const blockedNote = eligibility.findings.find((finding) => finding.outcome === "blocked");
+  const headline = blockedNote
+    ? blockedNote.note.replace(/\.$/, "").toLowerCase()
+    : matched.length > 0
       ? `${verdict.toLowerCase()} on ${listOut(matched.map((skill) => skill.label), 3)}`
       : `${verdict.toLowerCase()}, no overlapping technology`;
 
@@ -387,5 +420,6 @@ export function scoreJob(
     gaps,
     families,
     seniorityLabel: seniority.label,
+    eligibility,
   };
 }

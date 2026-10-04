@@ -8,6 +8,7 @@
     "start": "next start -p 43123",
     "lint": "eslint",
     "verify:boards": "node scripts/verify-boards.mjs",
+    "check:eligibility": "tsx scripts/check-eligibility.ts",
     "check:scoring": "tsx scripts/check-scoring.ts",
     "check:tailoring": "tsx scripts/check-tailoring.ts"
   },

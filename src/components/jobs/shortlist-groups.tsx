@@ -44,9 +44,15 @@ export function ShortlistGroups({
     // The untouched group keeps the India-eligible narrowing the shortlist has
     // always had. Once he has acted on a role, hiding it by location would be
     // hiding his own work, so the other two groups show everything.
+    //
+    // Roles he is not eligible for are left out of this group only. It is the
+    // one surface that recommends what to do next, and recommending a posting
+    // whose own stated bar rules him out is the bug this check exists to stop.
+    // They remain on the jobs page, where nothing is being recommended.
     const untouched = found.filter(
       (job) =>
         (statusOf(job) === "new" || statusOf(job) === "saved") &&
+        !job.scoring.eligibility.blocked &&
         (job.locationFit === "india" || job.locationFit === "remote-india"),
     );
     const resumeReady = found.filter((job) => statusOf(job) === "resume-ready");
@@ -226,6 +232,7 @@ function ShortlistCard({
           <ScoreBadge
             score={job.scoring.score}
             verdict={job.scoring.verdict}
+            ineligible={job.scoring.eligibility.blocked}
             className="self-start"
           />
         </div>

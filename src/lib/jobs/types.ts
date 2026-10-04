@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { eligibilityBarSchema } from "@/lib/eligibility/types";
+
 export const SOURCE_NAMES = [
   "himalayas",
   "remotive",
@@ -25,6 +27,13 @@ export const normalizedJobSchema = z.object({
   sourceLabel: z.string(),
   publishedAt: z.string().nullable(),
   locationFit: z.enum(LOCATION_FITS),
+  /**
+   * Numeric bars the posting states about the candidate, read from the full
+   * description before it is cut to DESCRIPTION_LIMIT. Scanning early is what
+   * lets an eligibility section near the end of a long posting still be seen.
+   * Defaults so snapshots written before this field stay readable.
+   */
+  eligibilityBars: z.array(eligibilityBarSchema).default([]),
 });
 
 export const sourceResultSchema = z.object({

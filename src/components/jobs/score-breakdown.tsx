@@ -17,7 +17,12 @@ export function ScoreBreakdown({ scoring }: { scoring: JobScore }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <ScoreBadge score={scoring.score} verdict={scoring.verdict} size="lg" />
+          <ScoreBadge
+            score={scoring.score}
+            verdict={scoring.verdict}
+            ineligible={scoring.eligibility.blocked}
+            size="lg"
+          />
           <p className="text-sm text-muted-foreground">
             Scored out of 100 against your saved resume. Nothing about the
             posting is added to your resume.

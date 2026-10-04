@@ -5,6 +5,8 @@ import {
   LEVER_BOARDS,
   type Board,
 } from "./boards";
+import { extractEligibilityBars } from "@/lib/eligibility/bars";
+
 import { classifyLocation, classifySeniority } from "./filters";
 import { FeedError, describeEndpoint, getJson, mapWithConcurrency } from "./http";
 import { htmlToText, truncate } from "./text";
@@ -81,6 +83,9 @@ function buildJob(params: {
     location: (params.location ?? "").trim() || "Remote",
     isRemote: location.isRemote,
     description: truncate(description, DESCRIPTION_LIMIT),
+    // Read from the full text, not the truncated copy above, so an eligibility
+    // section near the end of a long posting is still seen.
+    eligibilityBars: extractEligibilityBars(description),
     applyUrl,
     source: params.source,
     sourceLabel: SOURCE_LABELS[params.source],
